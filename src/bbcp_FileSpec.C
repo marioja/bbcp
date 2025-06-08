@@ -276,12 +276,17 @@ int bbcp_FileSpec::Decode(char *buff, char *xName)
        fmt = (char *)bbcp_DEGMT;
       } while(xtry-- && n != 9);
 
-// Make sure it is correct
+// Make sure it is correct (allow 8 or 9 fields for Docker container compatibility)
 //
-   if (n != 9) 
+   if (n != 9 && n != 8) 
       {sprintf(fnbuff,"Unable to decode item %d in file specification from",n+1);
        return bbcp_Fmsg("Decode", fnbuff, (xName ? xName : hostname));
       }
+   
+   // Handle case where only 8 fields are present (missing filename)
+   if (n == 8) {
+      strcpy(fnbuff, "");  // Set empty filename for directories
+   }
 
 // Prehandle symlinks
 //
