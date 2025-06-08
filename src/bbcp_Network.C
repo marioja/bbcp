@@ -386,7 +386,27 @@ char *bbcp_Network::FullHostName(char *host, int asipadr)
    if (!InetAddr.Format(myname, sizeof(myname),
                         (asipadr ? bbcp_NetAddrInfo::fmtAddr
                                  : bbcp_NetAddrInfo::fmtName),
-                        bbcp_NetAddrInfo::noPort)) return 0;
+                        bbcp_NetAddrInfo::noPort)) 
+   {
+      // Docker containers may fail hostname resolution - provide fallback
+      if (asipadr) 
+      {
+         // Return 127.0.0.1 for IP address format
+         return strdup("127.0.0.1");
+      } 
+      else 
+      {
+         // Try localhost as fallback hostname
+         bbcp_NetAddr LocalAddr((int)0);
+         if (LocalAddr.Set("localhost", 0) == 0 && 
+             LocalAddr.Format(myname, sizeof(myname), bbcp_NetAddrInfo::fmtName, bbcp_NetAddrInfo::noPort))
+         {
+            return strdup(myname);
+         }
+         // Final fallback to localhost string
+         return strdup("localhost");
+      }
+   }
 
 // Return the name
 //
