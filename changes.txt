@@ -1,0 +1,152 @@
+BBCP HOSTNAME RESOLUTION FIXES
+===============================
+Date: June 8, 2025
+Author: Mario Jauvin (marioja)
+
+PROBLEM DESCRIPTION:
+===================
+BBCP was failing with hostname resolution errors when used in Docker containers,
+specifically when trying to resolve "localhost" or other network addresses. This
+caused connection failures during file transfers in containerized environments.
+
+CHANGES MADE:
+=============
+
+ENHANCED HOSTNAME RESOLUTION IN bbcp_NetAddrInfo.C
+--------------------------------------------------
+File: src/bbcp_NetAddrInfo.C
+Method: bbcp_NetAddrInfo::Set()
+
+Improvements:
+- Added robust error handling for getaddrinfo() failures
+- Implemented fallback mechanism using gethostbyname() when getaddrinfo() fails
+- Added debug logging to track hostname resolution attempts
+- Ensured proper cleanup of allocated memory structures
+- Enhanced support for both numeric IP addresses and hostname resolution
+- Improved IPv4/IPv6 dual-stack compatibility
+
+Technical Details:
+- Added proper error checking after getaddrinfo() calls
+- Implemented gethostbyname() fallback for legacy hostname resolution
+- Added debug output with bb_Debug.Say() for troubleshooting
+- Ensured freeaddrinfo() is called to prevent memory leaks
+- Enhanced error reporting with specific failure reasons
+
+FILE SPECIFICATION DECODE FIX IN bbcp_FileSpec.C
+------------------------------------------------
+File: src/bbcp_FileSpec.C
+Method: bbcp_FileSpec::Decode()
+
+Problem:
+- Original bbcp required exactly 9 fields in file specifications
+- Docker containers sometimes send incomplete file specifications with only 8 fields
+- This caused "Unable to decode item 9 in file specification" errors
+
+Solution:
+- Modified the decode logic to accept both 8 and 9 fields for Docker container compatibility
+- Added condition: if (n != 9 && n != 8) to allow both field counts
+- Added handling for missing filename field: if (n == 8) { strcpy(fnbuff, ""); }
+- Maintained backward compatibility with existing 9-field specifications
+
+Technical Details:
+- Changed validation from requiring exactly 9 fields to accepting 8 or 9 fields
+- Added empty filename handling for directory entries with missing filename field
+- Preserves all existing functionality while improving Docker container compatibility
+
+VERSION NUMBER UPDATE IN bbcp_Version.C
+---------------------------------------
+File: src/bbcp_Version.C
+Variable: Version
+
+Change:
+- Updated version string from "Version: 17.12.00.00.0" to "Version: 17.12.00.00.1"
+- Incremented the patch version number to indicate the Docker container fixes
+- Maintains version format compatibility with existing bbcp installations
+
+Purpose:
+- Identifies builds that include the Docker container compatibility fixes
+- Allows administrators to verify they have the patched version
+- Follows semantic versioning convention for patch-level changes
+
+TESTING PERFORMED:
+==================
+Hostname Resolution (bbcp_NetAddrInfo.C):
+- Verified bbcp binary compilation and execution
+- Tested hostname resolution with localhost, 127.0.0.1, and [::1] IPv6
+- Confirmed proper error handling for invalid hostnames
+- Validated that network connection attempts occur after successful hostname resolution
+- Verified debug output shows successful address resolution in verbose mode
+
+File Specification Decode (bbcp_FileSpec.C):
+- Tested with both 8-field and 9-field file specifications
+- Verified directory handling with missing filename fields
+- Confirmed backward compatibility with existing file specifications
+- Validated proper error handling for invalid field counts
+
+Version Identification (bbcp_Version.C):
+- Confirmed version number displays as "17.12.00.00.1" in --version output
+- Verified version checking works properly with updated version string
+- Tested version compatibility warnings with different bbcp versions
+
+IMPACT:
+=======
+Hostname Resolution Improvements:
+- Fixes hostname resolution failures in various network environments
+- Improves reliability of bbcp network connectivity
+- Enables bbcp to work properly with localhost and modern networking configurations
+
+File Specification Handling:
+- Resolves "Unable to decode item 9" errors in Docker containers
+- Improves compatibility with containerized file transfer scenarios
+- Ensures reliable operation when file specifications have missing fields
+
+Version Tracking:
+- Provides clear identification of patched vs. unpatched bbcp installations
+- Enables administrators to verify deployment of Docker container fixes
+- Maintains compatibility with existing version checking mechanisms
+
+Overall Benefits:
+- Maintains backward compatibility with existing functionality
+- Provides better error reporting and debugging capabilities
+- Eliminates intermittent failures in Docker container environments
+- Enables reliable bbcp operation in modern containerized infrastructures
+
+LICENSE COMPLIANCE:
+==================
+All changes are made under the GNU Lesser General Public License v3 (LGPL v3)
+as specified in src/COPYING.LESSER. The modifications enhance functionality
+while maintaining full compliance with the original license terms.
+
+DEPLOYMENT:
+===========
+The fixes are available in the bbcp source code with enhanced bbcp_NetAddrInfo.C
+containing improved hostname resolution capabilities.
+
+VALIDATION STATUS:
+==================
+✓ Code compiled successfully with all changes
+✓ Hostname resolution verified working (bbcp_NetAddrInfo.C)
+✓ File specification decode enhanced for Docker compatibility (bbcp_FileSpec.C)  
+✓ Version number updated to 17.12.00.00.1 (bbcp_Version.C)
+✓ Error handling improved across all modified components
+✓ Debug logging functional for troubleshooting
+✓ Memory management verified for all changes
+✓ Backward compatibility maintained
+✓ Docker container testing successful
+✓ License compliance confirmed for all modifications
+
+FILES MODIFIED:
+===============
+1. src/bbcp_NetAddrInfo.C - Enhanced hostname resolution with fallback mechanisms
+2. src/bbcp_FileSpec.C - File specification decode fix for Docker container compatibility  
+3. src/bbcp_Version.C - Version number updated from 17.12.00.00.0 to 17.12.00.00.1
+
+SUMMARY:
+========
+This patch set addresses critical Docker container compatibility issues in bbcp by:
+1. Fixing hostname resolution failures through enhanced fallback mechanisms
+2. Resolving file specification decode errors when handling incomplete field sets
+3. Updating the version number to clearly identify installations with these fixes
+
+All changes maintain full backward compatibility while significantly improving bbcp's 
+reliability in containerized environments.
